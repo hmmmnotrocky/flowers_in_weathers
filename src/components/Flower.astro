@@ -1,0 +1,151 @@
+---
+const { 
+  numberOfFlowers = 4,
+  fillPetals = false,
+
+  /* Petal count */
+  minPetals = 5,
+  maxPetals = 8,
+
+  /* Stem */
+  minStemHeight = 80,
+  maxStemHeight = 120,
+
+  /* Petal geometry */
+  minPetalRadius = 30,
+  maxPetalRadius = 90,
+  minPetalWidth = 30,
+  maxPetalWidth = 80,
+
+  /* Bouquet spread */
+  maxOffsetX = 25
+
+} = Astro.props;
+
+/* ===============================
+   Helpers
+================================ */
+
+function rand(min, max) {
+  return Math.random() * (max - min) + min;
+}
+
+function randInt(min, max) {
+  return Math.floor(rand(min, max + 1));
+}
+
+function polar(cx, cy, r, angleDeg) {
+  const rad = (angleDeg - 90) * Math.PI / 180;
+  return {
+    x: cx + r * Math.cos(rad),
+    y: cy + r * Math.sin(rad)
+  };
+}
+
+/* ===============================
+   Color Families
+================================ */
+
+const baseHues = [
+//   330, // pink
+  30,  // orange
+//   280, // purple
+//   55,  // yellow
+//   210  // blue
+];
+
+/* ===============================
+   Base Anchor
+================================ */
+
+const baseCenterX = 100;
+const stemBottomY = 95;
+
+/* ===============================
+   Generate Flowers
+================================ */
+
+const flowers = [];
+
+for (let i = 0; i < numberOfFlowers; i++) {
+
+  const petals = randInt(minPetals, maxPetals);
+  const stemHeight = rand(minStemHeight, maxStemHeight);
+  const petalRadius = rand(minPetalRadius, maxPetalRadius);
+  const petalWidth = rand(minPetalWidth, maxPetalWidth);
+
+  const startingAngle = rand(0, 360);
+
+  /* X Offset */
+  const offsetX = rand(-maxOffsetX, maxOffsetX);
+  const centerX = baseCenterX + offsetX;
+  const centerY = stemBottomY - stemHeight;
+
+  /* Unique phase for asynchronous sway */
+  const phase = Math.random() * Math.PI * 2;
+
+  /* Color Variation */
+  const baseHue = baseHues[randInt(0, baseHues.length - 1)];
+  const hue = baseHue + rand(-30, 30);
+  const color = `hsl(${hue}, 70%, 50%)`;
+
+  const petalPaths = [];
+
+  for (let j = 0; j < petals; j++) {
+    const segment = 360 / petals;
+    const angle = segment * j + startingAngle;
+
+    const c1 = polar(centerX, centerY, petalWidth, angle - 20);
+    const c2 = polar(centerX, centerY, petalWidth, angle + 20);
+
+    const path = `
+      M ${centerX} ${centerY}
+      C ${c1.x} ${c1.y}
+        ${c2.x} ${c2.y}
+        ${centerX} ${centerY}
+    `;
+
+    petalPaths.push(path);
+  }
+
+  flowers.push({
+    centerX,
+    centerY,
+    petalPaths,
+    color,
+    phase
+  });
+}
+---
+
+{flowers.map((flower) => (
+  <g 
+    class="sway-group"
+    data-phase={flower.phase}
+    style={`transform-origin: ${flower.centerX}px ${stemBottomY}px;`}
+  >
+
+    <!-- Stem -->
+    <path
+      d={`
+        M ${flower.centerX} ${stemBottomY}
+        Q ${flower.centerX} ${stemBottomY - 20}
+          ${flower.centerX} ${flower.centerY}
+      `}
+      fill="none"
+      stroke={flower.color}
+      stroke-width="2"
+      stroke-linecap="round"
+    />
+
+    <!-- Petals -->
+    <g 
+      stroke={flower.color} 
+      fill={fillPetals ? flower.color : "none"} 
+      stroke-width="2"
+    >
+      {flower.petalPaths.map(p => <path d={p} />)}
+    </g>
+
+  </g>
+))}

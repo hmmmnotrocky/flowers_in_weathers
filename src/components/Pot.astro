@@ -1,0 +1,71 @@
+---
+import Flower from './Flower.astro';
+
+const { color = "#444", petals = 6 } = Astro.props;
+---
+
+<div class="pot-container">
+  <svg 
+    viewBox="0 0 200 200"
+    preserveAspectRatio="xMidYMax meet"
+    class="pot-svg"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+
+    <!-- Shift drawing down by 35 units so pot touches bottom -->
+    <g transform="translate(0, 35)">
+
+      <!-- Pot body -->
+      <path 
+        d="M60 95 Q100 110 140 95 L125 155 Q100 165 75 155 Z"
+        fill="none"
+        stroke={color}
+        stroke-width="2"
+      />
+
+      <!-- Rim -->
+      <ellipse 
+        cx="100" 
+        cy="95" 
+        rx="45" 
+        ry="10"
+        fill="none"
+        stroke={color}
+        stroke-width="2"
+      />
+
+
+    <Flower
+      numberOfFlowers={5}
+      minPetals={4}
+      maxPetals={9}
+      minStemHeight={70}
+      maxStemHeight={200}
+      minSway={5}
+      maxSway={20}
+      minPeriod={10}
+      maxPeriod={20}
+      fillPetals={true}
+    />
+
+
+      
+
+    </g>
+
+  </svg>
+</div>
+
+<style>
+.pot-container {
+  width: 60%;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+
+.pot-svg {
+  height: 100%;
+  width: 100%;
+}
+</style>
