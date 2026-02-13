@@ -89,6 +89,11 @@ for (let i = 0; i < numberOfFlowers; i++) {
   const hue = baseHue + rand(-30, 30);
   const color = `hsl(${hue}, 70%, 50%)`;
 
+  /* Center circle: hue within ±20 of flower, size proportional to petal width */
+  const centerHue = (hue + rand(-20, 20) + 360) % 360;
+  const centerColor = `hsl(${centerHue}, 65%, 45%)`;
+  const centerRadius = petalWidth * 0.08;
+
   const petalPaths = [];
 
   for (let j = 0; j < petals; j++) {
@@ -113,7 +118,9 @@ for (let i = 0; i < numberOfFlowers; i++) {
     centerY,
     petalPaths,
     color,
-    phase
+    phase,
+    centerRadius,
+    centerColor
   });
 }
 ---
@@ -146,6 +153,14 @@ for (let i = 0; i < numberOfFlowers; i++) {
     >
       {flower.petalPaths.map(p => <path d={p} />)}
     </g>
+
+    <!-- Center circle -->
+    <circle
+      cx={flower.centerX}
+      cy={flower.centerY}
+      r={flower.centerRadius}
+      fill={flower.centerColor}
+    />
 
   </g>
 ))}
