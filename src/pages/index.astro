@@ -128,7 +128,7 @@ async function loadWeather() {
     "https://api.open-meteo.com/v1/forecast?" +
     "latitude=" + currentLat +
     "&longitude=" + currentLon +
-    "&hourly=temperature_2m,relativehumidity_2m,apparent_temperature,precipitation,cloudcover,windspeed_10m,windgusts_10m" +
+    "&hourly=temperature_2m,relativehumidity_2m,apparent_temperature,precipitation,precipitation_probability,cloudcover,windspeed_10m,windgusts_10m" +
     "&daily=temperature_2m_max,temperature_2m_min" +
     "&timezone=auto";
 
@@ -214,6 +214,7 @@ function getRainNotes(dayIndices, startHour, hourly, timezone) {
   }
   if (entries.length === 0) return [];
 
+  const prob = hourly.precipitation_probability ?? [];
   const items = [];
   let i = 0;
   while (i < entries.length) {
@@ -223,7 +224,20 @@ function getRainNotes(dayIndices, startHour, hourly, timezone) {
     const end = entries[j - 1];
     const label = labels[start.intensity];
     const timeText = start.hour === end.hour ? `at ${start.hourLabel}` : `${start.hourLabel} to ${end.hourLabel}`;
-    items.push({ label, timeText });
+    let rainChance = 0;
+    if (prob.length) {
+      let sum = 0;
+      let count = 0;
+      for (let k = i; k < j; k++) {
+        const ri = dayIndices[entries[k].hour];
+        if (ri !== undefined) {
+          sum += prob[ri] ?? 0;
+          count++;
+        }
+      }
+      rainChance = count ? Math.round(sum / count) : 0;
+    }
+    items.push({ label, timeText, rainChance });
     i = j;
   }
   return items;
@@ -404,6 +418,7 @@ function renderHour(hourWithinDay) {
           <div class="hour-info-q"><span class="hour-info-q-label">Wind</span><span class="hour-info-q-value">${hourly.windspeed_10m[realIndex]} km/h</span></div>
           <div class="hour-info-q"><span class="hour-info-q-label">Gust</span><span class="hour-info-q-value">${hourly.windgusts_10m[realIndex]} km/h</span></div>
           <div class="hour-info-q"><span class="hour-info-q-label">Rain</span><span class="hour-info-q-value">${precip} mm</span></div>
+          <div class="hour-info-q"><span class="hour-info-q-label">Rain Chance</span><span class="hour-info-q-value">${(hourly.precipitation_probability?.[realIndex] ?? 0)}%</span></div>
           <div class="hour-info-q"><span class="hour-info-q-label">Cloud Cover</span><span class="hour-info-q-value">${cloud}%</span></div>
           <div class="hour-info-q"><span class="hour-info-q-label">Humidity</span><span class="hour-info-q-value">${hourly.relativehumidity_2m[realIndex]}%</span></div>
         </div>
@@ -422,7 +437,7 @@ function renderHour(hourWithinDay) {
         .map(
           (item) =>
             `<div class="note-item">
-              <div class="note-label">${item.label}</div>
+              <div class="note-label">${item.label}<span class="note-label-pct"> (${item.rainChance}%)</span></div>
               <div class="note-time">${item.timeText}</div>
             </div>`
         )
@@ -458,6 +473,7 @@ function renderHour(hourWithinDay) {
         <div class="detail-item"><span class="detail-label">Feels</span><span class="detail-value">${hourly.apparent_temperature[realIndex]}°C</span></div>
         <div class="detail-item"><span class="detail-label">Humidity</span><span class="detail-value">${hourly.relativehumidity_2m[realIndex]}%</span></div>
         <div class="detail-item"><span class="detail-label">Precip</span><span class="detail-value">${hourly.precipitation[realIndex]} mm</span></div>
+        <div class="detail-item"><span class="detail-label">Rain Chance</span><span class="detail-value">${(hourly.precipitation_probability?.[realIndex] ?? 0)}%</span></div>
         <div class="detail-item"><span class="detail-label">Cloud</span><span class="detail-value">${cloud}%</span></div>
         <div class="detail-item"><span class="detail-label">Wind</span><span class="detail-value">${hourly.windspeed_10m[realIndex]} km/h</span></div>
         <div class="detail-item"><span class="detail-label">Gusts</span><span class="detail-value">${hourly.windgusts_10m[realIndex]} km/h</span></div>
@@ -921,6 +937,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 	color: rgba(255, 255, 255, 0.98);
 	line-height: 1.25;
 	margin-bottom: 0.06rem;
+	}
+
+	.notes-card-content :global(.note-label-pct) {
+	font-weight: 400;
 	}
 
 	.notes-card-content :global(.note-time) {
